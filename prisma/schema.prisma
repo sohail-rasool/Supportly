@@ -22,12 +22,19 @@ model Test {
 
 // ─── Better Auth core models (auth/auth.ts) ─────────────────────────────────
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id            String    @id
   name          String
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  // Set only in the database; Better Auth never lets users set it at sign-up.
+  role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
