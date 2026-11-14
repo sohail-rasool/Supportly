@@ -20,8 +20,23 @@ function createPrismaClient() {
 // would open a new connection pool and eventually exhaust the database.
 const globalForPrisma = globalThis as unknown as {
   prisma?: ReturnType<typeof createPrismaClient>
+  prismaClientClass?: typeof PrismaClient
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+function getPrismaClient() {
+  const cached = globalForPrisma.prisma
+  // After `prisma generate` (e.g. new models), the generated module reloads with
+  // a new PrismaClient class. A client cached from the old one wouldn't have the
+  // new models (prisma.conversation === undefined), so replace it.
+  if (cached && globalForPrisma.prismaClientClass === PrismaClient) return cached
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+  void cached?.$disconnect()
+  const client = createPrismaClient()
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client
+    globalForPrisma.prismaClientClass = PrismaClient
+  }
+  return client
+}
+
+export const prisma = getPrismaClient()

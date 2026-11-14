@@ -28,17 +28,18 @@ enum Role {
 }
 
 model User {
-  id            String    @id
+  id            String         @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean        @default(false)
   image         String?
   // Set only in the database; Better Auth never lets users set it at sign-up.
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
+  conversations Conversation[]
 
   @@unique([email])
   @@map("user")
@@ -90,4 +91,40 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// ─── Chat ───────────────────────────────────────────────────────────────────
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+/// A chat thread owned by one user. Deleting the user deletes their conversations.
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String    @default("New chat")
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  /// Bumped when a message is added, so the sidebar can sort by recent activity.
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, updatedAt])
+  @@map("conversation")
+}
+
+/// One message in a conversation. Deleting the conversation deletes its messages.
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@map("message")
 }
