@@ -40,6 +40,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   conversations Conversation[]
+  tickets       Ticket[]
 
   @@unique([email])
   @@map("user")
@@ -107,6 +108,7 @@ model Conversation {
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  Message[]
+  tickets   Ticket[]
   createdAt DateTime  @default(now())
   /// Bumped when a message is added, so the sidebar can sort by recent activity.
   updatedAt DateTime  @updatedAt
@@ -122,9 +124,49 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           MessageRole
   content        String       @db.Text
+  /// Which AI agent wrote this reply (assistant messages only).
+  agentName      String?
+  /// Names of the tools the agent called while producing this reply.
+  toolsUsed      String[]     @default([])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@index([conversationId, createdAt])
   @@map("message")
+}
+
+// ─── Tickets ────────────────────────────────────────────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// A human escalation ticket raised from a conversation.
+/// While OPEN or IN_PROGRESS, the conversation is handled by a human, not the AI.
+model Ticket {
+  id             String         @id @default(cuid())
+  title          String
+  description    String         @db.Text
+  status         TicketStatus   @default(OPEN)
+  priority       TicketPriority @default(MEDIUM)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([conversationId, status])
+  @@map("ticket")
 }

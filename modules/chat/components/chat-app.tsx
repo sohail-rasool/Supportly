@@ -117,7 +117,8 @@ export function ChatApp() {
             </EmptyContent>
           </Empty>
         ) : active ? (
-          <ChatPanel conversationId={active.id} />
+          // Keyed so streaming state never leaks between chats.
+          <ChatPanel key={active.id} conversationId={active.id} />
         ) : (
           <Empty className="flex-1">
             <EmptyHeader>

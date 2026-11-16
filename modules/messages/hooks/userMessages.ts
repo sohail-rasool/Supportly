@@ -9,7 +9,8 @@ export const messageKeys = {
   list: (conversationId: string | null) => ["messages", conversationId] as const,
 };
 
-type Message = Awaited<ReturnType<typeof getMessages>>[number];
+export type ChatMessage = Awaited<ReturnType<typeof getMessages>>[number];
+type Message = ChatMessage;
 
 export function useMessages(conversationId: string | null) {
   return useQuery({
@@ -36,6 +37,8 @@ export function useCreateMessage(conversationId: string) {
         conversationId,
         role: "USER",
         content: content.trim(),
+        agentName: null,
+        toolsUsed: [],
         createdAt: now,
         updatedAt: now,
       };
